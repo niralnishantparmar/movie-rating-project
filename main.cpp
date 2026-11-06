@@ -1,27 +1,19 @@
-// ============================================================
-// Movie Rating System
-// Grade 11 C++ Project
-// Team: ____________________ & ____________________
-//
-// This program manages a list of movies and their ratings
-// (0-10). Each movie is stored as an object of the Movie class.
-// A menu lets the user view, add, search and sort movies, and
-// see a summary with the average, highest and lowest ratings.
-// Each movie is labeled RECOMMENDED, MIXED REVIEWS or
-// NOT RECOMMENDED, shown with a color and a star bar.
-// ============================================================
+// Movie Rating System!!
+// grade 11 cpp project
+// by niral and tanu
+// this program manages a list of movies and their ratings on a scale of 1-10
 
 #include <iostream>
 #include <string>
 #include <vector>
-#include <iomanip>   // setprecision for clean decimals
-#include <sstream>   // ostringstream to format numbers as text
-#include <limits>    // numeric_limits for clearing bad input
-#include <cctype>    // tolower for case-insensitive search
-#include <cmath>     // floor
-#include <algorithm> // stable_sort
+#include <iomanip>
+#include <sstream>
+#include <limits>
+#include <cctype>
+#include <cmath> // literally only for floor function
+#include <algorithm> // stable sort
 
-// ---- GUI includes (ImGui + browser) ----
+// ui stuff
 #include <emscripten.h>
 #include <GLFW/glfw3.h>
 #include "imgui.h"
@@ -30,14 +22,8 @@
 
 using namespace std;
 
-// ------------------------------------------------------------
-// DISPLAY SETTINGS
-// Set USE_COLOR to false if your console shows strange
-// symbols like [32m instead of colors.
-// ------------------------------------------------------------
 const bool USE_COLOR = true;
 
-// ANSI color codes (special text the console turns into colors)
 const string RESET  = "\033[0m";
 const string BOLD   = "\033[1m";
 const string RED    = "\033[31m";
@@ -47,7 +33,6 @@ const string CYAN   = "\033[36m";
 
 const int BOX_WIDTH = 66;   // inner width of the boxes
 
-// Returns text wrapped in a color (or plain text if colors are off)
 string paint(string text, string colorCode) {
     if (!USE_COLOR) {
         return text;
@@ -55,8 +40,6 @@ string paint(string text, string colorCode) {
     return colorCode + text + RESET;
 }
 
-// Adds spaces to the end of text so columns line up.
-// Long text is shortened with "..." so it does not break the table.
 string padRight(string text, int width) {
     if ((int)text.length() > width - 1) {
         text = text.substr(0, width - 4) + "...";
@@ -67,14 +50,12 @@ string padRight(string text, int width) {
     return text;
 }
 
-// Turns a number like 9.2 into the text "9.2"
 string formatRating(double value) {
     ostringstream out;
     out << fixed << setprecision(1) << value;
     return out.str();
 }
 
-// Returns a lowercase copy of text (used for searching)
 string toLowerCase(string text) {
     for (int i = 0; i < (int)text.length(); i++) {
         text[i] = tolower(text[i]);
@@ -82,20 +63,15 @@ string toLowerCase(string text) {
     return text;
 }
 
-// ---------- Box drawing helpers (the "frontend") ----------
-
-// Prints a border line like +-----------+
 void printBorder() {
     cout << paint("+" + string(BOX_WIDTH, '-') + "+", CYAN) << endl;
 }
 
-// Prints one row inside a box: | text        |
 void printBoxRow(string text) {
     cout << paint("|", CYAN) << " " << padRight(text, BOX_WIDTH - 1)
          << paint("|", CYAN) << endl;
 }
 
-// Prints a centered, bold title row inside a box
 void printBoxTitle(string text) {
     int leftSpace = (BOX_WIDTH - (int)text.length()) / 2;
     int rightSpace = BOX_WIDTH - (int)text.length() - leftSpace;
@@ -104,24 +80,18 @@ void printBoxTitle(string text) {
          << paint("|", CYAN) << endl;
 }
 
-// ------------------------------------------------------------
-// Movie class: stores one movie's title and rating
-// ------------------------------------------------------------
+//the actual movie class
 class Movie {
 private:
-    // Private data: can only be reached through the methods below
     string title;
     double rating;
 
 public:
-    // Parameterized constructor: assigns the title and rating
-    // when each Movie object is created
     Movie(string movieTitle, double movieRating) {
         title = movieTitle;
         rating = movieRating;
     }
 
-    // Getter methods
     string getTitle() {
         return title;
     }
@@ -130,7 +100,6 @@ public:
         return rating;
     }
 
-    // Decides the recommendation status using if / else
     string getStatus() {
         if (rating >= 7.0) {
             return "RECOMMENDED";
@@ -141,7 +110,6 @@ public:
         }
     }
 
-    // Picks a color that matches the status
     string getStatusColor() {
         if (rating >= 7.0) {
             return GREEN;
@@ -151,8 +119,7 @@ public:
             return RED;
         }
     }
-
-    // Builds a star bar out of 10, e.g. 9.2 -> [*********.]
+// star bar for fun
     string getStars() {
         int filled = (int)(rating + 0.5);   // round to nearest whole number
         string stars = "";
@@ -166,7 +133,6 @@ public:
         return "[" + stars + "]";
     }
 
-    // Displays this movie as one colored row of the table
     void display(int number) {
         cout << paint("|", CYAN) << " "
              << padRight(to_string(number), 4)
@@ -178,11 +144,8 @@ public:
     }
 };
 
-// ------------------------------------------------------------
-// Input helpers: keep asking until the input is valid
-// ------------------------------------------------------------
+// spam ask until they actually give you an answer
 
-// Reads a whole number between minValue and maxValue
 int getValidInt(string prompt, int minValue, int maxValue) {
     int value;
     while (true) {
@@ -190,7 +153,7 @@ int getValidInt(string prompt, int minValue, int maxValue) {
         cin >> value;
 
         if (cin.fail()) {
-            // User typed letters instead of a number
+            // letter instead of num
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << paint("  Invalid input. Please enter a number.", RED) << endl;
@@ -199,14 +162,12 @@ int getValidInt(string prompt, int minValue, int maxValue) {
             cout << paint("  Please enter a number from " + to_string(minValue)
                           + " to " + to_string(maxValue) + ".", RED) << endl;
         } else {
-            // Remove the leftover newline so getline works next time
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             return value;
         }
     }
 }
 
-// Reads a rating between 0 and 10 (decimals allowed)
 double getValidRating() {
     double value;
     while (true) {
@@ -227,11 +188,8 @@ double getValidRating() {
     }
 }
 
-// ------------------------------------------------------------
-// Menu actions
-// ------------------------------------------------------------
+// menu
 
-// Prints the column headings for the movie table
 void printTableHeader() {
     printBorder();
     cout << paint("|", CYAN) << " "
@@ -241,7 +199,6 @@ void printTableHeader() {
     printBorder();
 }
 
-// Option 1: show every movie in a table
 void viewAll(vector<Movie>& movies) {
     cout << endl;
     printTableHeader();
@@ -251,17 +208,16 @@ void viewAll(vector<Movie>& movies) {
     printBorder();
 }
 
-// Option 2: create a new Movie object from user input
+// new movie
 void addMovie(vector<Movie>& movies) {
     string title = "";
     cout << endl;
     while (title == "") {
         cout << "  Enter title: ";
-        getline(cin, title);   // getline allows titles with spaces
+        getline(cin, title); 
     }
     double rating = getValidRating();
 
-    // Create the object with the parameterized constructor
     Movie newMovie(title, rating);
     movies.push_back(newMovie);
 
@@ -269,7 +225,6 @@ void addMovie(vector<Movie>& movies) {
                   newMovie.getStatusColor()) << endl;
 }
 
-// Option 3: find movies whose title contains the search words
 void searchMovie(vector<Movie>& movies) {
     string search;
     cout << endl << "  Enter part of a title to search: ";
@@ -278,7 +233,6 @@ void searchMovie(vector<Movie>& movies) {
     int found = 0;
     printTableHeader();
     for (int i = 0; i < (int)movies.size(); i++) {
-        // Compare in lowercase so "lion" matches "The Lion King"
         if (toLowerCase(movies[i].getTitle()).find(toLowerCase(search)) != string::npos) {
             movies[i].display(i + 1);
             found++;
@@ -290,12 +244,10 @@ void searchMovie(vector<Movie>& movies) {
     printBorder();
 }
 
-// Option 4: sort movies from highest to lowest rating (bubble sort)
 void sortByRating(vector<Movie>& movies) {
     int n = movies.size();
     for (int i = 0; i < n - 1; i++) {
         for (int j = 0; j < n - 1 - i; j++) {
-            // Swap if the left movie has a lower rating than the right one
             if (movies[j].getRating() < movies[j + 1].getRating()) {
                 Movie temp = movies[j];
                 movies[j] = movies[j + 1];
@@ -307,7 +259,6 @@ void sortByRating(vector<Movie>& movies) {
     viewAll(movies);
 }
 
-// Option 5: calculate and show the summary statistics
 void showSummary(vector<Movie>& movies) {
     double total = 0.0;
     int bestIndex = 0;
@@ -316,7 +267,6 @@ void showSummary(vector<Movie>& movies) {
     int mixed = 0;
     int notRecommended = 0;
 
-    // Loop through every movie to total, count and compare
     for (int i = 0; i < (int)movies.size(); i++) {
         double r = movies[i].getRating();
         total += r;
@@ -337,7 +287,7 @@ void showSummary(vector<Movie>& movies) {
         }
     }
 
-    // Basic calculation: average rating
+    // avg rating
     double average = total / movies.size();
     ostringstream avgText;
     avgText << fixed << setprecision(2) << average;
@@ -357,7 +307,6 @@ void showSummary(vector<Movie>& movies) {
     printBoxRow("Not recommended:   " + to_string(notRecommended));
     printBorder();
 
-    // Overall verdict based on the average
     if (average >= 7.0) {
         cout << paint("  Overall: Great movie list!", GREEN) << endl;
     } else if (average >= 5.0) {
@@ -367,7 +316,6 @@ void showSummary(vector<Movie>& movies) {
     }
 }
 
-// Prints the main menu inside a box
 void printMenu() {
     cout << endl;
     printBorder();
@@ -382,20 +330,14 @@ void printMenu() {
     printBorder();
 }
 
-// ------------------------------------------------------------
-// consoleMain: the original console version (kept for the repo,
-// not used by the web build). Rename it back to main() and remove
-// the GUI section below to run the console version again.
-// ------------------------------------------------------------
-int consoleMain() {
-    vector<Movie> movies;   // stores all Movie objects
 
-    // Create 3 starting objects with the parameterized constructor
+int consoleMain() {
+    vector<Movie> movies;   
+
     movies.push_back(Movie("The Lion King", 9.2));
     movies.push_back(Movie("Cats", 2.8));
     movies.push_back(Movie("The Martian", 6.5));
 
-    // Title banner
     printBorder();
     printBoxTitle("MOVIE RATING SYSTEM");
     printBoxTitle("Rate it. Rank it. Pick your next movie.");
@@ -403,7 +345,6 @@ int consoleMain() {
 
     int choice;
 
-    // Main loop: keeps showing the menu until the user picks 6
     do {
         printMenu();
         choice = getValidInt("Enter your choice (1-6): ", 1, 6);
@@ -433,11 +374,6 @@ int consoleMain() {
     return 0;
 }
 
-// ============================================================
-// ImGui frontend (runs in the browser via WebAssembly)
-// ============================================================
-
-// Same green / yellow / red logic as Movie::getStatusColor, as ImGui colors
 static ImVec4 statusColorUI(double r) {
     if (r >= 7.0) return ImVec4(0.30f, 0.85f, 0.45f, 1);
     if (r >= 5.0) return ImVec4(0.95f, 0.80f, 0.25f, 1);
@@ -465,13 +401,11 @@ static void drawUI(vector<Movie>& movies) {
 
     if (ImGui::BeginTabBar("tabs")) {
 
-        // ---------- Movies tab (view + search + sort) ----------
         if (ImGui::BeginTabItem("Movies")) {
             ImGui::SetNextItemWidth(300);
             ImGui::InputTextWithHint("##search", "Search title...", searchBuf, 128);
             ImGui::SameLine();
             if (ImGui::Button("Sort by rating")) {
-                // Movie passed by value (copies), so the non-const getters work
                 stable_sort(movies.begin(), movies.end(),
                     [](Movie a, Movie b) { return a.getRating() > b.getRating(); });
             }
@@ -506,8 +440,7 @@ static void drawUI(vector<Movie>& movies) {
             }
             ImGui::EndTabItem();
         }
-
-        // ---------- Add tab ----------
+        
         if (ImGui::BeginTabItem("Add Movie")) {
             ImGui::Spacing();
             ImGui::SetNextItemWidth(400);
@@ -539,7 +472,7 @@ static void drawUI(vector<Movie>& movies) {
             ImGui::EndTabItem();
         }
 
-        // ---------- Summary tab ----------
+        // summary
         if (ImGui::BeginTabItem("Summary")) {
             ImGui::Spacing();
             if (movies.empty()) {
@@ -583,9 +516,7 @@ static void drawUI(vector<Movie>& movies) {
 static GLFWwindow* gWindow;
 static vector<Movie> gMovies;
 
-// Runs once per browser frame
 static void frame() {
-    // Keep the canvas the same size as the browser window
     int bw = EM_ASM_INT({ return window.innerWidth; });
     int bh = EM_ASM_INT({ return window.innerHeight; });
     int cw, ch;
@@ -611,13 +542,10 @@ static void frame() {
 }
 
 int main() {
-    // Starting movies (same as the console version)
     gMovies.push_back(Movie("The Lion King", 9.2));
     gMovies.push_back(Movie("Cats", 2.8));
     gMovies.push_back(Movie("The Martian", 6.5));
 
-    // Make the auto-generated page show ONLY the app:
-    // dark background, no margins, canvas covers the whole window
     EM_ASM({
         document.title = "Movie Rating System";
         document.body.style.cssText = "margin:0;overflow:hidden;background:#141419;";
